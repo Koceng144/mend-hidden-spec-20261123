@@ -32,8 +32,8 @@ class Fail {
 }
 
 const blank = (s: string): boolean => s.trim() === '';
-/** Surrounding spaces (and tabs) removed. */
-const trimSpaces = (s: string): string => s.replace(/^[ \t]+|[ \t]+$/g, '');
+/** Surrounding spaces removed (SPEC says "spaces" for section 6/8 paths and anchors, not tabs). */
+const trimSpaces = (s: string): string => s.replace(/^ +| +$/g, '');
 /** The leading spaces and tabs of a line. */
 const leadWs = (s: string): string => /^[ \t]*/.exec(s)![0];
 const onlyWs = (s: string): boolean => /^[ \t]*$/.test(s);
@@ -288,8 +288,9 @@ function parseUnified(lines: string[]): Section[] {
     }
     if (inHeader) {
       if (line.startsWith('+++ ')) cur!.hdrNew = headerPath(line);
-      else if (line.startsWith('rename from ')) cur!.renameFrom = trimSpaces(line.slice('rename from '.length));
-      else if (line.startsWith('rename to ')) cur!.renameTo = trimSpaces(line.slice('rename to '.length));
+      // Section 6 names no trimming for rename paths (unlike ---/+++): the path is the exact rest of the line.
+      else if (line.startsWith('rename from ')) cur!.renameFrom = line.slice('rename from '.length);
+      else if (line.startsWith('rename to ')) cur!.renameTo = line.slice('rename to '.length);
       else if (line.startsWith('new file mode')) cur!.newFileMode = true;
       else if (line.startsWith('deleted file mode')) cur!.deletedFileMode = true;
       i += 1;
@@ -522,7 +523,8 @@ function parseV4a(lines: string[]): V4aSection[] {
     } else {
       let idx = 0;
       if (raw.length > 0 && raw[0]!.text.startsWith('*** Move to: ')) {
-        section.moveTo = trimSpaces(raw[0]!.text.slice('*** Move to: '.length));
+        // Section 8 names no trimming for Move to (unlike section paths): the path is the exact rest of the line.
+        section.moveTo = raw[0]!.text.slice('*** Move to: '.length);
         idx = 1;
       }
       let cur: V4aChunk | null = null;
